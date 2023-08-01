@@ -1,6 +1,7 @@
 import argparse
 import os
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
@@ -453,9 +454,20 @@ def cli():
         warnings.warn("--max_line_count has no effect without --max_line_width")
     writer_args = {arg: args.pop(arg) for arg in word_options}
     for audio_path in args.pop("audio"):
+        if os.path.isdir(audio_path):
+            audio_files = os.listdir(audio_path)
+            for i, audio_file in enumerate(audio_files):
+                audio_file = str(Path(audio_path) / audio_file)
+                print("Transcribe %s. Index: %d/%d" % (audio_file, i+1, len(audio_files)))
+                result = transcribe(model, audio_file, temperature=temperature, **args)
+                writer(result, audio_file, writer_args)
+            continue
+
+        print("Transcribe %s" % audio_path)
         result = transcribe(model, audio_path, temperature=temperature, **args)
         writer(result, audio_path, writer_args)
 
 
 if __name__ == "__main__":
     cli()
+    # whisper input_dir --model small --language en -o output_dir -f srt --verbose False
